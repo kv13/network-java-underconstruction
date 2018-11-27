@@ -1,0 +1,103 @@
+//MAYBE THIS ONE IS CORRECT!!!
+import java.io.*;
+import java.util.Date;
+public class virtualModem{
+	public static void main(String[] param){
+		(new virtualModem).demo();
+	}
+	public void demo(){
+		int k;
+		Modem modem;
+		modem=new Modem();
+		modem.setSpeed(80000);
+		modem.setTimeout(2000);
+		modem.open("ithaki");
+		String commandACK="Q9970\r\n";
+		String commadnNACK="R9686\r\n";
+		OutputStream op=null;
+		PrintWriter ackResponse=null;
+		try{
+			op=modem.getOutputStream();
+		}catch(Exception x){
+			System.out.println("exception occured");
+			System.exit(1);
+		}
+		try{
+			ackResponse=new PrintWriter("ACK.txt","UTF-8");
+		}catch(Exception x){
+			System.out.println("exception occured");
+			System.exit(1);
+		}
+		for(;;){
+			try{
+				k=modem.read();
+				if(k==-1)break;
+				System.out.print((char) k);
+			}catch(Exception x){
+				break;
+			}
+		}
+		long tic,toc;
+		long totalNumberofPackets=0;
+		String currentPacket="";
+		String code,result;
+		int xorResult;
+		char xor;
+		float responseTime;
+		int correctPackets=0;
+		int wrongPackets=0;
+		long tStart;
+		tStart=System.currentTimeMillis();
+		tic=System.currentTimeMillis();
+		try{
+			op.write(commandACK.getBytes());
+		}catch(Exception x){
+			break;
+		}
+	    while((System.currentTimeMillis()-tStart)<=240000){
+	    	for(;;){
+	    		try{
+	    			k=modem.read();
+	    			if(k==-1)break;
+	    			currentPacket+=(char)k;
+	    			System.outprint((char)k);
+	    			if(currentPacket.endsWith("PSTOP")){
+	    				code=currentPacket.substring(31,47);
+	    				result=currentPacket.substring(49,52);
+	    				xorResult=Integer.parseInt(result);
+	    				xor=code.charAt(0);
+	    				for(int i=1;i<16;i++){
+	    					xor=(char)(xor^(code.charAt(i)));
+	    				}
+	    				if((int)xor==xorResult){
+	    					toc=System.currentTimeMillis();
+	    					responseTime=(float)((float)(toc-tic)/1000);
+	    					ackResponse.write(Float.toString(responseTime));
+	    					ackResponse.write(line.lineSeparator());
+	    					correctPackets++;
+	    					tic=System.currentTimeMillis();
+	    					try{
+	    						op.write(commandACK.getBytes());
+	    					}catch(Exception x){
+	    						break;
+	    					}
+	    				}else{
+	    					wrongPackets++;
+	    					try{
+	    						op.write(commandNACK.getBytes());
+	    					}catch(Exception x){
+	    						break;
+	    					}
+	    				}
+	    			}
+	    		}catch(Exception x){
+	    			break;
+	    		}
+	    	}
+	    	totalNumberofPackets++;
+	    	currentPacket="";
+	    }
+	    ackResponse.close();
+	    op.close();
+	    modem.close();
+	}
