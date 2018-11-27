@@ -1,0 +1,144 @@
+import java.io.*;
+import java.util.Date;
+public class virtualModem{
+	public static void main(String[] param){
+		(new virtualModem()).demo();
+	}
+ 
+public void demo(){
+	int k;
+	Modem modem;
+	modem=new Modem();
+	modem.setSpeed(80000);
+	modem.setTimeout(2000);
+	modem.open("ithaki");
+	String message="P1596\r\n";
+	String commandACK="Q9970\r\n"; 
+	String commandNACK="R9586\r\n";
+	OutputStream op=null;
+	PrintWriter ackResponse=null;
+	try{
+		ackResponse=new PrintWriter("ACK.txt", "UTF-8");
+	}catch(Exception x){
+		System.out.println("exception occured .Exit");
+		System.exit(1);
+	}
+	try{
+		op=modem.getOutputStream();
+	}catch(Exception x){
+		System.out.println("THERE is an exception");
+		System.exit(1);
+	}
+	for(;;){
+		try{
+			k=modem.read();
+			if(k==-1)break;
+			System.out.print((char)k);
+		}catch(Exception x){
+			break;
+		}
+	}
+	long tic,toc;
+	long totalNumberofPackets=0;
+	String currentPacket="";
+	String code,result;
+	String xorcode;
+	int xorResult;
+	char xor;
+	float responseTime;
+	int correctPackets=0;
+	int wrongPacket=0;
+	long tStart;
+	tic=System.currentTimeMillis();
+	try{
+		op.write(commandACK.getBytes());
+		System.out.println("111111111111111");
+	}catch(Exception x){
+		System.out.println("exception caught");
+		System.exit(1);
+	}
+    tStart=System.currentTimeMillis();
+	while(System.currentTimeMillis()-tStart<240000){//για 4 λεπτα παιρνω πακετα 
+		if(totalNumberofPackets==0){//αυτο για το 1ο πακετο μονο που θα δωσω αναγκαστικα κωδικα ack 
+			tic=System.currentTimeMillis();
+			try{
+				op.write(commandACK.getBytes());
+				System.out.println("1222222222222222222222222222222");
+			}catch(Exception a){
+				System.exit(1);
+			}
+		}
+		try{
+			k=modem.read();
+			if(k==-1)break;
+			currentPacket+=(char)k;
+			System.out.print((char)k);
+			if(currentPacket.endsWith("PSTOP")){//here we check if  packet is read
+				code=currentPacket.substring(31,47);//we take the code and the result
+				result=currentPacket.substring(49,52);//γιατι χρειαζεται αυτο ?.replaceALL("\\s+","");
+			    xorResult=Integer.parseInt(result);//we convert the result to int .And maybe this two lines can wrote to one     
+				xor=code.charAt(0);
+				for(int j=1;j<16;j++){
+					xor=(char)(code.charAt(j)^xor);
+				}
+				if((int)xor==xorResult){
+					toc=System.currentTimeMillis();
+					responseTime=(float)((float)(toc-tic)/1000);
+					ackResponse.write(Float.toString(responseTime));
+					ackResponse.write(System.lineSeparator());
+					tic=System.currentTimeMillis();
+					modem.write(commandACK.getBytes());
+					correctPackets++;
+				}
+				else{
+					modem.write(commandNACK.getBytes());
+					wrongPacket++;
+				}
+			}
+			
+		}catch(Exception a){
+			System.out.println("exception occured exit");
+			System.exit(1);
+		}
+		totalNumberofPackets++;
+		currentPacket="";
+	}
+	ackResponse.close();
+	modem.close();
+  }
+}
+//somewhere there is a mistake 
+//from the begin 
+import java.io.*;
+import java.util.Date;
+public class virtualModem{
+	public static void main(String[] param){
+		(new virtualModem).demo();
+	}
+	public void demo(){
+		int k;
+		Modem modem;
+		modem=new Modem();
+		modem.setSpeed(80000);
+		modem.setTimeout(2000);
+		modem.open("ithaki");
+		String commandACK="Q9970\r\n";
+		String commadnNACK="R9686\r\n";
+		OutputStream op=null;
+		PrintWriter ackResponse=null;
+		try{
+			op=modem.getOutputStream();
+		}catch(Exception x){
+			System.out.println("exception occured");
+			System.exit(1);
+		}
+		try{
+			ackResponse=new PrintWriter("ACK.txt","UTF-8");
+		}catch(Exception x){
+			System.out.println("exception occured");
+			System.exit(1);
+		}
+		for(;;){
+			try
+	}
+}
