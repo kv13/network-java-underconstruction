@@ -1,0 +1,115 @@
+import java.io.*;
+public class virtualModem{
+	public static void main(String[] param){
+		(new virtualModem()).demo();
+	}
+	public void demo(){
+		int k;
+		String message="P2617R=1000099\r\n";
+		Modem modem;
+		modem=new Modem();
+		modem.setSpeed(80000);
+		modem.setTimeout(20000);
+		modem.open("ithaki");
+		OutputStream op;
+		PrintWriter coords=null;
+		try{
+			coords=new PrintWriter(new FileOutputStream(new File("GPS.txt"),true));
+		}catch(Exception x){
+			System.out.println("file not found ");
+		}
+		try{
+			op=modem.getOutputStream();
+			op.write(message.getBytes());
+		}catch (Exception x){
+			System.out.println("there is an a exception");
+		}
+		for(;;){
+			try{
+				k=modem.read();
+				if(k==-1)break;
+				System.out.print((char) k);
+		    	coords.write((char)k);
+			}catch(Exception x){
+					break;
+				}
+			
+		}
+		modem.close();
+		coords.close();
+		String line=null;
+		PrintWriter onlyCoords=null;
+		BufferedReader buffer1=null;
+		try{
+			onlyCoords=new PrintWriter(new FileOutputStream(new File("ONLYGPS.txt")));
+			buffer1=new BufferedReader(new FileReader("GPS.txt"));
+		}catch(Exception x){
+			System.out.println("PROBLEM loading Files");
+		}
+		try{
+			line=buffer1.readLine();
+			while((line=buffer1.readLine())!=null){
+				if(line.startsWith("$GPGGA")){
+					System.out.println("edw mallon den mpenei ");
+					onlyCoords.write(line);
+					//onlyCoords.write(System.getProperty("line.separator"));
+				}
+			}
+			buffer1.close();
+		    onlyCoords.close();
+		}catch(Exception x){
+			System.out.println("there is an exceptio");
+		}
+//ΜΕΧΡΙ ΕΔΩ ΥΠΟΘΕΤΙΚΑ ΕΧΩ ΦΤΙΑΞΕΙ ΤΟ ΑΡΧΕΙΟ ΜΕ ΤΑ ΙΧΝΗ ΚΑΙ ΤΩΡΑ ΠΡΕΠΕΙ ΝΑ ΠΑΡΩ ΜΑΞ 9 ΙΧΝΗ ΠΟΥ ΝΑ ΑΠΕΧΟΥΝ 4ΔΕΥΤ.
+        BufferedReader buffer2=null;
+		String longt,lat;
+		String cmd="P3665";
+		int Counter=0;
+		float[] longtitude=new float[9];
+		float[] latitude=new float[9];
+		long[] time=new long[9];
+		long min,sec;
+		try{
+			buffer2=new BufferedReader(new FileReader("ONLYGPS.txt"));
+		}catch(Exception x){
+			System.out.println("file not found");
+		}
+		line=null;
+		float timedistance=4;
+		for(;;){
+			try{
+				line=buffer2.readLine();
+			}catch(Exception x){
+				System.out.println("there is an exception");
+				break;
+			}
+			String[] data=new String[15];
+			data=line.split(",");//can i put this line outside the loop ???
+			if(Counter==0){
+				longtitude[Counter]=Float.parseFloat(data[2]);
+				latitude[Counter]=Float.parseFloat(data[4]);
+				time[Counter]=Integer.parseInt(data[1]);
+				sec=time[Counter]%100;
+				min=(time[Counter]%10000)-sec;
+				time[Counter]=sec+min*60;//χρονος σε δευτερολεπτα για να μπορω να κανω την αφαιρεση ευκολα 
+				Counter=Counter +1;
+			}
+			else{
+				time[Counter]=Integer.parseInt(data[1]);
+				sec=time[Counter]%100;
+				min=(time[Counter]%10000)-(time[Counter]%100);
+				time[Counter]=sec+min*60;
+				if(time[Counter]-time[Counter-1]>4){
+					longtitude[Counter]=Float.parseFloat(data[2]);
+					latitude[Counter]=Float.parseFloat(data[4]);
+				}	Counter=Counter+1;
+			}
+			if(Counter==9)break;
+		}
+//BUILD THE COMMAND WITH T-PARAMETERS
+		for(int j=0;j<Counter;j++){
+			cmd+=cmd+"T="+longtitude[j]+latitude[j];
+		}
+		System.out.println("ftanei edw");
+	}
+}
