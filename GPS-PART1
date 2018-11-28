@@ -1,0 +1,90 @@
+import  java.io.*;
+public class virtualModem{
+	public static void main(String[] param){
+		(new virtualModem()).demo();
+	}
+	public void demo(){
+		int k ;
+		String message="P6173R=1000099\r\n";
+		Modem modem=new Modem();
+		modem.setSpeed(80000);
+		modem.setTimeout(2000);
+		modem.open("ithaki");
+		OutputStream op=null;
+		PrintWriter coords=null;
+		try{
+			op=modem.getOutputStream();
+		}catch (Exception x){
+			System.out.println("Exception Occured ");
+			System.exit(1);
+		}
+		try{
+			coords=new PrintWriter("GPSCOORDS.txt","UTF-8");
+		}catch(Exception x){
+			System.out.println("cannot create the file ");
+			System.exit(1);
+		}
+		try{
+			op.write(message.getBytes());
+		}catch(Exception x){
+			System.out.println("exception occure ");
+			System.exit(1);
+		}
+		for(;;){
+			try{
+				k=modem.read();
+				if(k==-1)break;
+				coords.write((char)k);
+				System.out.print((char)k);
+			}catch(Exception x){
+				System.out.println("exception occured ");
+				System.exit(1);
+			}
+		}
+		coords.close();
+		try{
+			op.close();
+			modem.close();
+		}catch(Exception x){
+			System.out.println("Exception Occured ");
+			System.exit(1);
+		}
+		String line="";
+		BufferedReader br1=null;
+		PrintWriter onlyCOORDS=null;
+		try{
+			onlyCOORDS=new PrintWriter("ONLYGPS.txt","UTF-8");
+		}catch(Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+		try{
+			br1=new BufferedReader(new FileReader("GPSCOORDS.txt"));
+		}catch (Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+		try{
+			while((line=br1.readLine())!=null){
+				if(line.startsWith("$GPGGA")){
+					onlyCOORDS.write(line);
+					onlyCOORDS.write(System.lineSeparator());
+				}
+			}
+		}catch(Exception x){
+			System.exit(1);
+		}
+		try{
+			br1.close();
+		}catch(Exception x){
+			System.out.println("Exception Occured ");
+			System.exit(1);
+		}
+		try{
+			onlyCOORDS.close();
+		}catch(Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+	}
+}
