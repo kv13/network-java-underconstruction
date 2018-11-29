@@ -1,0 +1,62 @@
+import java.io.*;
+public class virtualModem{
+	public static void main (String[] param){
+		(new virtualModem()).demo();
+	}
+	public void demo(){
+		int k;
+		boolean counter=false;
+		Modem modem;
+		modem=new Modem();
+		modem.setSpeed(80000);
+		modem.setTimeout(2000);
+		modem.open("ithaki");
+		/*String message2="P5281T=406271229482T=406332229407T=406255229600 \r\n";*/
+		String message2="M4549CAM=17\r\n";
+		OutputStream op;
+		op=modem.getOutputStream();
+		OutputStream out=null;
+		try{
+			out = new  FileOutputStream("outfilename.jpg");
+		}catch (Exception x){
+			System.out.println("Exception");
+		}
+		for(;;){
+			try{
+				op.write(message2.getBytes());
+			}catch(Exception e){
+				System.out.println("there is an exception");
+			}
+			try{
+				k=modem.read();
+				if(k==-1)break;
+				System.out.print((char)k);
+				if(k==0xFF){
+					for(;;){
+						out.write(k);
+						k=modem.read();
+						if(k==0xFF ){
+							out.write(k);
+							k=modem.read();
+							if(k==0xD9){
+								out.write(k);
+								counter=true;
+							}
+						}
+						if(counter) break;
+					}
+				}
+			}catch(Exception x){
+				break;
+			}
+			if(counter)break;
+		}
+		System.out.println("FINITO");
+		try{
+			out.close();
+		}catch (Exception x){
+			System.out.println("Exception caught ");
+		}
+		modem.close();
+	}
+}
