@@ -1,0 +1,282 @@
+import  java.io.*;
+public class virtualModem{
+	public static void main(String[] param){
+		(new virtualModem()).demo();
+	}
+	public void demo(){
+		int k ;
+		String message="P5983R=1001099\r\n";
+		Modem modem=new Modem();
+		modem.setSpeed(80000);
+		modem.setTimeout(2000);
+		modem.open("ithaki");
+		OutputStream op=null;
+		PrintWriter coords=null;
+		boolean counter=false;
+		OutputStream out=null;
+		try{
+			out=new FileOutputStream("GPSIMAGE.jpg");
+		}catch(Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+		try{
+			op=modem.getOutputStream();
+		}catch (Exception x){
+			System.out.println("Exception Occured ");
+			System.exit(1);
+		}
+		try{
+			coords=new PrintWriter("GPSCOORDS.txt","UTF-8");
+		}catch(Exception x){
+			System.out.println("cannot create the file ");
+			System.exit(1);
+		}
+		try{
+			op.write(message.getBytes());
+		}catch(Exception x){
+			System.out.println("exception occure ");
+			System.exit(1);
+		}
+		for(;;){
+			try{
+				k=modem.read();
+				if(k==-1)break;
+				coords.write((char)k);
+				System.out.print((char)k);
+			}catch(Exception x){
+				System.out.println("exception occured ");
+				System.exit(1);
+			}
+		}
+		coords.close();
+		modem.write("E9649\r\n".getBytes());
+		try{
+			op.close();
+			modem.close();
+		}catch(Exception x){
+			System.out.println("Exception Occured ");
+			System.exit(1);
+		}
+		String line="";
+		BufferedReader br1=null;
+		PrintWriter onlyCOORDS=null;
+		try{
+			onlyCOORDS=new PrintWriter("ONLYGPS.txt","UTF-8");
+		}catch(Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+		try{
+			br1=new BufferedReader(new FileReader("GPSCOORDS.txt"));
+		}catch (Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+		try{
+			while((line=br1.readLine())!=null){
+				if(line.startsWith("$GPGGA")){
+					onlyCOORDS.write(line);
+					onlyCOORDS.write(System.lineSeparator());
+				}
+			}
+		}catch(Exception x){
+			System.exit(1);
+		}
+		try{
+			br1.close();
+		}catch(Exception x){
+			System.out.println("Exception Occured ");
+			System.exit(1);
+		}
+		modem.write("E9649\r\n".getBytes());
+		try{
+			onlyCOORDS.close();
+		}catch(Exception x){
+			System.out.println("Exception Occured");
+			System.exit(1);
+		}
+		BufferedReader br2=null;
+		line="";
+		modem.write("E9649\r\n".getBytes());
+		try{
+			br2=new BufferedReader(new FileReader("ONLYGPS.txt"));
+		}catch(Exception x){
+			System.exit(1);
+		}
+		int Counter=0;
+		double[] longtitude=new double[5];
+		double[] latitude=new double[5];
+		int[] time=new int[5];
+		int sec,min,temp,temp2;
+		String TEMP;
+		String[][] data=new String[99][15];
+		try{
+			/*while((line=br2.readLine())!=null){
+				data=line.split(",");
+				if(Counter==0){
+					longtitude[Counter]=Float.parseFloat(data[2]);
+					latitude[Counter]=Float.parseFloat(data[4]);
+					time[Counter]=Long.parseLong(data[1]);
+					sec=time[Counter]%100;
+					min=(time[Counter]%10000)-sec;
+					time[Counter]=sec+min*60;
+					Counter=Counter+1;
+				}
+				else{
+					if(Counter<9){
+						time[Counter]=Long.parseLong(data[1]);
+						sec=time[Counter]%100;
+						min=(time[Counter]%10000)-sec;
+						time[Counter]=min*60+sec;
+						if(time[Counter]-time[Counter-1]>4){
+							longtitude[Counter]=Float.parseFloat(data[2]);
+							latitude[Counter]=Float.parseFloat(data[4]);
+							Counter=Counter+1;
+						}
+					}
+				}
+				if(Counter==9)break;
+			}*/
+			while((line=br2.readLine())!=null){
+				if(Counter==99)break;
+				data[Counter]=line.split(",");
+				System.out.println(data[1]);
+				Counter=Counter+1;
+			}
+		}catch(Exception x){
+			System.out.println("EXCEPTION OCCURED");
+			System.exit(1);
+		}
+		try{
+			br2.close();
+		}catch(Exception x){
+			System.exit(1);
+		}
+		Counter=0;
+		modem.write("E9649\r\n".getBytes());
+		for(int j=0;j<data.length;j++){
+			//System.out.println(data[j][1].substring(2,6));
+			TEMP=data[j][1].substring(2,6);
+			temp=Integer.parseInt(TEMP);
+			//System.out.print(temp);
+			sec=temp%100;
+			//System.out.print(sec);
+			min=(temp%10000)-sec;
+			min=min/100;
+			//System.out.print(min);
+			temp2=(min*60);
+			temp2+=sec;//temp2 time in sec
+			//System.out.println("time in String"+TEMP+"  time integer in sec " +temp2);
+			//System.out.println("\r\n");
+			if(Counter==0){
+				latitude[Counter]=Double.parseDouble(data[j][2]);
+				longtitude[Counter]=Double.parseDouble(data[j][4]);
+				time[Counter]=temp2;
+				Counter+=1;
+			}
+			else if(Counter<5 && Counter>0){
+				if(temp2-time[Counter-1]>18){
+					System.out.println(Counter+"  "+ j);
+					System.out.println(data[j][2]+"  "+data[j][4]);
+					latitude[Counter]=Double.parseDouble(data[j][2]);
+					longtitude[Counter]=Double.parseDouble(data[j][4]);
+					time[Counter]=temp2;
+					Counter=Counter+1;
+				}
+			}
+			else break;
+		}
+		/*for(int j=0;j<data.length;j++){
+			if(Counter==0){
+				longtitude[Counter]=Float.parseFloat(data[j][2]);
+				latitude[Counter]=Float.parseFloat(data[j][4]);
+				temp=Float.parseFloat(data[j][1]);
+				sec=temp%100;
+				min=(temp%10000)-sec;
+				time[Counter]=min*60+sec;
+				Counter=Counter+1;
+			}
+			else if(Counter<9){
+				temp=Float.parseFloat(data[j][1]);
+				sec=temp%100;
+				min=(temp%10000)-sec;
+				temp2=sec+min*60;
+				if(temp2>time[Counter-1]){
+					time[Counter]=temp2;
+					longtitude[Counter]=Float.parseFloat(data[j][2]);
+				    latitude[Counter]=Float.parseFloat(data[j][4]);
+					Counter=Counter+1;
+				}
+			}
+			else break;
+		}*/
+		for(int i=0;i<Counter;i++){
+			System.out.println("for thesi "+i);
+			System.out.println(time[i]);
+			System.out.println(latitude[i]);
+			System.out.println(longtitude[i]);
+		}
+		String cmd="P5983";
+		
+		long a,b;
+		int aa,bb;
+		String x,y;
+		for(int j=0;j<5;j++){
+			a=(long)(longtitude[j]);
+			b=(long)(latitude[j]);
+			aa=(int)((longtitude[j]-a)*60);
+			bb=(int)((latitude[j]-b)*60);
+			cmd=cmd+"T="+a+aa+b+bb;
+		}
+		cmd=cmd+"\r\n";
+		System.out.println(cmd);
+		modem.close();
+		Modem modem2=new Modem();
+		modem2.setSpeed(80000);
+		modem2.setTimeout(2000);
+		modem2.open("ithaki");
+		for(;;){
+			try{
+				k=modem2.read();
+				if(k==-1)break;
+				System.out.print((char)k);
+			}catch(Exception w){
+				System.exit(1);
+			}
+		}
+		for(;;){
+			try{
+				System.out.println("edw mpenei re ");
+				modem2.write(cmd.getBytes());
+			}catch(Exception w){
+				System.out.println("Exception Occured");
+				System.exit(1);
+			}
+			try{
+				k=modem2.read();
+				if(k==-1)break;
+				System.out.print((char)k);
+				if(k==0xFF){
+					for(;;){
+						out.write(k);
+						k=modem2.read();
+						if(k==0xFF){
+							out.write(k);
+							k=modem2.read();
+							if(k==0xD9){
+								out.write(k);
+								counter=true;
+							}
+						}
+						if(counter)break;
+					}
+				}
+			}catch(Exception w){
+				System.exit(1);
+			}
+			if(counter)break;
+		}
+		modem2.close();
+	}
+}
